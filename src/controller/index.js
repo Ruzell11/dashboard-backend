@@ -52,8 +52,9 @@ const createUserController = () => {
     const accessToken = createTokens(user);
 
     res.cookie("access-token", accessToken, {
-      maxAge: 60 * 60 * 24 * 30 * 1000,
+      maxAge: 60 * 60 * 24 * 30,
     });
+    res.set("access-token", accessToken);
     res.status(HTTP_OK).json({ success: SUCCESS, message: "User logged in" });
   };
 
