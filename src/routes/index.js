@@ -13,8 +13,7 @@ module.exports = () => {
   router.post("/register", UserRegister);
 
   //private routes
-
-  router.get("/profile", validateToken, UserProfile);
+  router.get("/profile/:id", validateToken, UserProfile);
 
   // Return the router with the middleware attached
   return router;
