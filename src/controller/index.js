@@ -55,13 +55,36 @@ const createUserController = () => {
       maxAge: 60 * 60 * 24 * 30,
     });
     res.set("access-token", accessToken);
-    res.status(HTTP_OK).json({ success: SUCCESS, message: "User logged in" });
+    res.status(HTTP_OK).json({
+      success: SUCCESS,
+      message: "User logged in",
+      user_details: {
+        role_id: user.role_id,
+        id: user.id,
+      },
+    });
   };
 
-  const UserProfile = (req, res) => {
-    res
-      .status(HTTP_OK)
-      .json({ success: SUCCESS, message: "this is the profile" });
+  const UserProfile = async (req, res) => {
+    const { id } = req.params;
+
+    const user_profile = await UserModel.findById(id);
+
+    if (!user_profile) {
+      return res
+        .status(HTTP_BAD_REQUEST)
+        .json({ success: FAILED, message: "User does not exist" });
+    }
+
+    res.status(HTTP_OK).json({
+      success: SUCCESS,
+      message: "User details found",
+      user_details: {
+        username: user_profile.email,
+        email: user_profile.password,
+        role_id: user_profile.role_id,
+      },
+    });
   };
 
   return { UserLogin, UserRegister, UserProfile };
