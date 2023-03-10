@@ -80,8 +80,8 @@ const createUserController = () => {
       success: SUCCESS,
       message: "User details found",
       user_details: {
-        username: user_profile.email,
-        email: user_profile.password,
+        username: user_profile.username,
+        email: user_profile.email,
         role_id: user_profile.role_id,
       },
     });
