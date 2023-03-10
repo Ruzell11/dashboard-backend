@@ -1,4 +1,5 @@
-const UserModel = require("../model/index");
+const UserModel = require("../model/UserModel");
+const TeamMember = require("../model/CreateTeamModel");
 const bcrypt = require("bcrypt");
 const { createTokens } = require("../middleware/index");
 const { HTTP_BAD_REQUEST, FAILED, HTTP_OK, SUCCESS } = require("../global");
@@ -87,7 +88,44 @@ const createUserController = () => {
     });
   };
 
-  return { UserLogin, UserRegister, UserProfile };
+  const CreateTeamMembers = (req, res) => {
+    const created_by_id = req.params.id;
+    const { username, first_name, last_name, email, password, role_id } =
+      req.body;
+
+    if (
+      !created_by_id ||
+      !username ||
+      !first_name ||
+      !last_name ||
+      !email ||
+      !password ||
+      !role_id
+    ) {
+      return res
+        .status(HTTP_BAD_REQUEST)
+        .json({ success: FAILED, message: "Missing fields are required" });
+    }
+
+    const newTeamMember = new TeamMember({
+      created_by: created_by_id,
+      username,
+      first_name,
+      last_name,
+      email,
+      password,
+      role_id,
+    });
+    newTeamMember.save();
+
+    return res.status(HTTP_OK).json({
+      success: SUCCESS,
+      message: "Successfully added ",
+      team_member_details: newTeamMember,
+    });
+  };
+
+  return { UserLogin, UserRegister, UserProfile, CreateTeamMembers };
 };
 
 module.exports = createUserController;
