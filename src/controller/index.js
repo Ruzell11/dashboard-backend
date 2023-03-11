@@ -49,12 +49,17 @@ const createUserController = () => {
   const UserProfile = async (req, res) => {
     const { id } = req.params;
 
-    const user_profile = await UserModel.findById(id);
+    let user_profile = await UserModel.findById(id);
 
     if (!user_profile) {
-      return res
-        .status(HTTP_BAD_REQUEST)
-        .json({ success: FAILED, message: "User does not exist" });
+      user_profile = await TeamMember.findById(id)
+
+      if (!user_profile) {
+        return res
+          .status(HTTP_BAD_REQUEST)
+          .json({ success: FAILED, message: "User does not exist" });
+      }
+
     }
 
     res.status(HTTP_OK).json({
