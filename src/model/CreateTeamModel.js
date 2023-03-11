@@ -7,6 +7,10 @@ const TeamMemberModel = new mongoose.Schema({
     required: true,
     ref: "User",
   },
+  email: {
+    type: String,
+    required: true,
+  },
   username: {
     type: String,
     required: true,

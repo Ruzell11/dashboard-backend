@@ -10,12 +10,15 @@ const createUserController = () => {
   const UserLogin = async (req, res) => {
     const { email, password } = req.body;
 
-    const user = await UserModel.findOne({ email });
+    let user = await UserModel.findOne({ email });
 
     if (!user) {
-      return res
-        .status(HTTP_BAD_REQUEST)
-        .json({ success: FAILED, message: "Incorrect email or password!" });
+      user = await TeamMember.findOne({ email });
+      if (!user) {
+        return res
+          .status(HTTP_BAD_REQUEST)
+          .json({ success: FAILED, message: "Incorrect email or password!" });
+      }
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -42,15 +45,21 @@ const createUserController = () => {
     });
   };
 
+
   const UserProfile = async (req, res) => {
     const { id } = req.params;
 
-    const user_profile = await UserModel.findById(id);
+    let user_profile = await UserModel.findById(id);
 
     if (!user_profile) {
-      return res
-        .status(HTTP_BAD_REQUEST)
-        .json({ success: FAILED, message: "User does not exist" });
+      user_profile = await TeamMember.findById(id)
+
+      if (!user_profile) {
+        return res
+          .status(HTTP_BAD_REQUEST)
+          .json({ success: FAILED, message: "User does not exist" });
+      }
+
     }
 
     res.status(HTTP_OK).json({
@@ -64,11 +73,10 @@ const createUserController = () => {
     });
   };
 
-  const CreateTeamMembers = (req, res) => {
+  const CreateTeamMembers = async (req, res) => {
     const created_by_id = req.params.id;
-    const { username, first_name, last_name, email, password, role_id } =
-      req.body;
-
+    const { username, first_name, last_name, email, password, role_id } = req.body;
+    const saltRounds = 10;
     if (
       !created_by_id ||
       !username ||
@@ -80,36 +88,49 @@ const createUserController = () => {
     ) {
       return res
         .status(HTTP_BAD_REQUEST)
-        .json({ success: FAILED, message: "Missing fields are required" });
+        .json({ success: FAILED, message: 'Missing fields are required' });
     }
 
-    const newTeamMember = new TeamMember({
-      created_by: created_by_id,
-      username,
-      first_name,
-      last_name,
-      email,
-      password,
-      role_id,
-    });
-    newTeamMember.save();
+    try {
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    return res.status(HTTP_OK).json({
-      success: SUCCESS,
-      message: "Successfully added ",
-      team_member_details: newTeamMember,
-    });
+      const newTeamMember = new TeamMember({
+        created_by: created_by_id,
+        username,
+        first_name,
+        last_name,
+        email,
+        password: hashedPassword,
+        role_id,
+      });
+
+      await newTeamMember.save();
+
+      return res.status(HTTP_OK).json({
+        success: SUCCESS,
+        message: 'Successfully added',
+        team_member_details: newTeamMember,
+      });
+    } catch (error) {
+      console.error(error);
+      return res
+        .status(HTTP_INTERNAL_SERVER_ERROR)
+        .json({ success: FAILED, message: 'Internal server error' });
+    }
   };
 
   const GetTeamMembers = async (req, res) => {
     const created_by_id = req.params.id
 
-    const user_profile = await UserModel.findById(created_by_id);
+    let user_profile = await UserModel.findById(created_by_id);
 
     if (!user_profile) {
-      return res
-        .status(HTTP_BAD_REQUEST)
-        .json({ success: FAILED, message: "User does not exist" });
+      user_profile = await TeamMember.findById(created_by_id);
+      if (!user_profile) {
+        return res
+          .status(HTTP_BAD_REQUEST)
+          .json({ success: FAILED, message: "User does not exist" });
+      }
     }
 
     const listOfMember = await TeamMember.find({ created_by: created_by_id })
@@ -123,7 +144,7 @@ const createUserController = () => {
     return res.status(HTTP_OK).json({
       success: SUCCESS,
       message: 'List of your team members',
-      team_leader_name: user_profile.username,
+      created_by: user_profile.username,
       listOfMember
     })
   }
