@@ -68,11 +68,10 @@ const createUserController = () => {
     });
   };
 
-  const CreateTeamMembers = (req, res) => {
+  const CreateTeamMembers = async (req, res) => {
     const created_by_id = req.params.id;
-    const { username, first_name, last_name, email, password, role_id } =
-      req.body;
-
+    const { username, first_name, last_name, email, password, role_id } = req.body;
+    const saltRounds = 10;
     if (
       !created_by_id ||
       !username ||
@@ -84,25 +83,35 @@ const createUserController = () => {
     ) {
       return res
         .status(HTTP_BAD_REQUEST)
-        .json({ success: FAILED, message: "Missing fields are required" });
+        .json({ success: FAILED, message: 'Missing fields are required' });
     }
 
-    const newTeamMember = new TeamMember({
-      created_by: created_by_id,
-      username,
-      first_name,
-      last_name,
-      email,
-      password,
-      role_id,
-    });
-    newTeamMember.save();
+    try {
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    return res.status(HTTP_OK).json({
-      success: SUCCESS,
-      message: "Successfully added ",
-      team_member_details: newTeamMember,
-    });
+      const newTeamMember = new TeamMember({
+        created_by: created_by_id,
+        username,
+        first_name,
+        last_name,
+        email,
+        password: hashedPassword,
+        role_id,
+      });
+
+      await newTeamMember.save();
+
+      return res.status(HTTP_OK).json({
+        success: SUCCESS,
+        message: 'Successfully added',
+        team_member_details: newTeamMember,
+      });
+    } catch (error) {
+      console.error(error);
+      return res
+        .status(HTTP_INTERNAL_SERVER_ERROR)
+        .json({ success: FAILED, message: 'Internal server error' });
+    }
   };
 
   const GetTeamMembers = async (req, res) => {
