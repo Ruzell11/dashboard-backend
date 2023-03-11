@@ -5,7 +5,7 @@ const { createTokens } = require("../middleware/index");
 const { HTTP_BAD_REQUEST, FAILED, HTTP_OK, SUCCESS } = require("../global");
 
 const createUserController = () => {
-  const UserRegister = async (req, res) => {
+  const CreateAdminAccount = async (req, res) => {
     const { username, password, role_id, email } = req.body;
     const saltRounds = 10;
 
@@ -125,7 +125,34 @@ const createUserController = () => {
     });
   };
 
-  return { UserLogin, UserRegister, UserProfile, CreateTeamMembers };
+  const GetTeamMembers = async (req, res) => {
+    const created_by_id = req.params.id
+
+    const user_profile = await UserModel.findById(created_by_id);
+
+    if (!user_profile) {
+      return res
+        .status(HTTP_BAD_REQUEST)
+        .json({ success: FAILED, message: "User does not exist" });
+    }
+
+    const listOfMember = await TeamMember.find({ created_by: created_by_id })
+
+    if (listOfMember.length === 0) {
+      return res
+        .status(HTTP_OK)
+        .json({ success: SUCCESS, message: "No members found" });
+    }
+
+    return res.status(HTTP_OK).json({
+      success: SUCCESS,
+      message: 'List of your team members',
+      team_leader_name: user_profile.username,
+      listOfMember
+    })
+  }
+
+  return { UserLogin, CreateAdminAccount, UserProfile, CreateTeamMembers, GetTeamMembers };
 };
 
 module.exports = createUserController;
