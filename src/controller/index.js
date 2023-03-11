@@ -5,31 +5,7 @@ const { createTokens } = require("../middleware/index");
 const { HTTP_BAD_REQUEST, FAILED, HTTP_OK, SUCCESS } = require("../global");
 
 const createUserController = () => {
-  const CreateAdminAccount = async (req, res) => {
-    const { username, password, role_id, email } = req.body;
-    const saltRounds = 10;
 
-    if (!username || !password || !role_id || !email)
-      return res
-        .status(HTTP_BAD_REQUEST)
-        .json({ success: FAILED, message: "Missing Fields are required" });
-
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    const newUser = new UserModel({
-      username,
-      password: hashedPassword,
-      role_id,
-      email,
-    });
-
-    newUser.save();
-    return res.status(HTTP_OK).json({
-      success: SUCCESS,
-      message: "Register Successfully",
-      user_details: newUser,
-    });
-  };
 
   const UserLogin = async (req, res) => {
     const { email, password } = req.body;
@@ -152,7 +128,7 @@ const createUserController = () => {
     })
   }
 
-  return { UserLogin, CreateAdminAccount, UserProfile, CreateTeamMembers, GetTeamMembers };
+  return { UserLogin, UserProfile, CreateTeamMembers, GetTeamMembers };
 };
 
 module.exports = createUserController;
