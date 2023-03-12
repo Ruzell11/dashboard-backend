@@ -118,30 +118,31 @@ const createUserController = () => {
   const GetTeamMembers = async (req, res) => {
     const created_by_id = req.params.id
 
-    try {
-      if (!created_by_id) {
+    let user_profile = await UserModel.findById(created_by_id);
+
+    if (!user_profile) {
+      user_profile = await TeamMember.findById(created_by_id);
+      if (!user_profile) {
         return res
           .status(HTTP_BAD_REQUEST)
-          .json({ success: FAILED, message: "Id is required" });
+          .json({ success: FAILED, message: "User does not exist" });
       }
-
-      let user_profile = await UserModel.findById(created_by_id);
-
-      if (!user_profile) {
-        user_profile = await TeamMember.findById(created_by_id);
-        if (!user_profile) {
-          return res
-            .status(HTTP_BAD_REQUEST)
-            .json({ success: FAILED, message: "User does not exist" });
-        }
-      }
-
-    } catch (error) {
-      return res
-        .status(HTTP_BAD_REQUEST)
-        .json({ success: FAILED, error });
     }
 
+    const listOfMember = await TeamMember.find({ created_by: created_by_id })
+
+    if (listOfMember.length === 0) {
+      return res
+        .status(HTTP_OK)
+        .json({ success: SUCCESS, message: "No members found" });
+    }
+
+    return res.status(HTTP_OK).json({
+      success: SUCCESS,
+      message: 'List of your team members',
+      created_by: user_profile.username,
+      listOfMember
+    })
   }
 
   const EditUserDetails = async (req, res) => {
