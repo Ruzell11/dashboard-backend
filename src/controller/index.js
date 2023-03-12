@@ -5,151 +5,215 @@ const { createTokens } = require("../middleware/index");
 const { HTTP_BAD_REQUEST, FAILED, HTTP_OK, SUCCESS } = require("../global");
 
 const createUserController = () => {
-
-
   const UserLogin = async (req, res) => {
     const { email, password } = req.body;
 
-    let user = await UserModel.findOne({ email });
+    try {
+      const user = await UserModel.findOne({ email });
 
-    if (!user) {
-      user = await TeamMember.findOne({ email });
       if (!user) {
+        const team_member = await TeamMember.findOne({ email });
+        if (!team_member) {
+          return res
+            .status(HTTP_BAD_REQUEST)
+            .json({ success: FAILED, message: "Incorrect email or password!" });
+        }
+      }
+
+      const isMatch = await bcrypt.compare(password, user.password);
+
+      if (!isMatch) {
         return res
           .status(HTTP_BAD_REQUEST)
           .json({ success: FAILED, message: "Incorrect email or password!" });
       }
-    }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+      const accessToken = createTokens(user);
 
-    if (!isMatch) {
+      res.cookie("access-token", accessToken, {
+        maxAge: 60 * 60 * 24 * 30,
+      });
+      res.set("access-token", accessToken);
+      res.status(HTTP_OK).json({
+        success: SUCCESS,
+        message: "User logged in",
+        user_details: {
+          role_id: user.role_id,
+          id: user.id,
+        },
+      });
+    } catch (error) {
       return res
         .status(HTTP_BAD_REQUEST)
-        .json({ success: FAILED, message: "Incorrect email or password!" });
+        .json({ success: FAILED, error });
     }
-
-    const accessToken = createTokens(user);
-
-    res.cookie("access-token", accessToken, {
-      maxAge: 60 * 60 * 24 * 30,
-    });
-    res.set("access-token", accessToken);
-    res.status(HTTP_OK).json({
-      success: SUCCESS,
-      message: "User logged in",
-      user_details: {
-        role_id: user.role_id,
-        id: user.id,
-      },
-    });
-  };
-
+  }
 
   const UserProfile = async (req, res) => {
     const { id } = req.params;
 
-    let user_profile = await UserModel.findById(id);
-
-    if (!user_profile) {
-      user_profile = await TeamMember.findById(id)
+    try {
+      const user_profile = await UserModel.findById(id);
 
       if (!user_profile) {
-        return res
-          .status(HTTP_BAD_REQUEST)
-          .json({ success: FAILED, message: "User does not exist" });
-      }
+        const team_member = await TeamMember.findById(id)
 
+        if (!team_member) {
+          return res
+            .status(HTTP_BAD_REQUEST)
+            .json({ success: FAILED, message: "User does not exist" });
+        }
+      }
+      res.status(HTTP_OK).json({
+        success: SUCCESS,
+        message: "User details found",
+        user_details: {
+          username: user_profile.username,
+          email: user_profile.email,
+          role_id: user_profile.role_id,
+        },
+      });
+    } catch (error) {
+      return res
+        .status(HTTP_BAD_REQUEST)
+        .json({ success: FAILED, error });
     }
 
-    res.status(HTTP_OK).json({
-      success: SUCCESS,
-      message: "User details found",
-      user_details: {
-        username: user_profile.username,
-        email: user_profile.email,
-        role_id: user_profile.role_id,
-      },
-    });
   };
 
   const CreateTeamMembers = async (req, res) => {
-    const created_by_id = req.params.id;
+    const created_by_id = req.query?.created_by_id
     const { username, first_name, last_name, email, password, role_id } = req.body;
     const saltRounds = 10;
-    if (
-      !created_by_id ||
-      !username ||
-      !first_name ||
-      !last_name ||
-      !email ||
-      !password ||
-      !role_id
-    ) {
-      return res
-        .status(HTTP_BAD_REQUEST)
-        .json({ success: FAILED, message: 'Missing fields are required' });
+
+
+    if (role_id !== 1 && (!created_by_id || !username || !first_name || !last_name || !email || !password || !role_id)) {
+      return res.status(HTTP_BAD_REQUEST).json({ success: FAILED, message: 'Missing fields are required' });
+    }
+
+    if (role_id === 1 && (!username || !first_name || !last_name || !email || !password || !role_id)) {
+      return res.status(HTTP_BAD_REQUEST).json({ success: FAILED, message: 'Missing fields are required' });
     }
 
     try {
       const hashedPassword = await bcrypt.hash(password, saltRounds);
+      const newMember = role_id === 1 ?
+        new UserModel({ email, username, password: hashedPassword, role_id, last_name, first_name }) :
+        new TeamMember({ created_by: created_by_id, username, first_name, last_name, email, password: hashedPassword, role_id });
 
-      const newTeamMember = new TeamMember({
-        created_by: created_by_id,
-        username,
-        first_name,
-        last_name,
-        email,
-        password: hashedPassword,
-        role_id,
-      });
-
-      await newTeamMember.save();
+      await newMember.save();
 
       return res.status(HTTP_OK).json({
         success: SUCCESS,
         message: 'Successfully added',
-        team_member_details: newTeamMember,
+        team_member_details: newMember,
       });
     } catch (error) {
-      console.error(error);
-      return res
-        .status(HTTP_INTERNAL_SERVER_ERROR)
-        .json({ success: FAILED, message: 'Internal server error' });
+
+      return res.status(HTTP_BAD_REQUEST).json({ success: FAILED, error });
     }
   };
+
 
   const GetTeamMembers = async (req, res) => {
     const created_by_id = req.params.id
 
-    let user_profile = await UserModel.findById(created_by_id);
-
-    if (!user_profile) {
-      user_profile = await TeamMember.findById(created_by_id);
-      if (!user_profile) {
+    try {
+      if (!created_by_id) {
         return res
           .status(HTTP_BAD_REQUEST)
-          .json({ success: FAILED, message: "User does not exist" });
+          .json({ success: FAILED, message: "Id is required" });
       }
-    }
 
-    const listOfMember = await TeamMember.find({ created_by: created_by_id })
+      let user_profile = await UserModel.findById(created_by_id);
 
-    if (listOfMember.length === 0) {
+      if (!user_profile) {
+        user_profile = await TeamMember.findById(created_by_id);
+        if (!user_profile) {
+          return res
+            .status(HTTP_BAD_REQUEST)
+            .json({ success: FAILED, message: "User does not exist" });
+        }
+      }
+
+    } catch (error) {
       return res
-        .status(HTTP_OK)
-        .json({ success: SUCCESS, message: "No members found" });
+        .status(HTTP_BAD_REQUEST)
+        .json({ success: FAILED, error });
     }
 
-    return res.status(HTTP_OK).json({
-      success: SUCCESS,
-      message: 'List of your team members',
-      created_by: user_profile.username,
-      listOfMember
-    })
   }
 
-  return { UserLogin, UserProfile, CreateTeamMembers, GetTeamMembers };
+  const EditUserDetails = async (req, res) => {
+    const { id } = req.params;
+    const { body } = req;
+
+    try {
+      if (!id) {
+        return res
+          .status(HTTP_BAD_REQUEST)
+          .json({ success: FAILED, message: "Id is required" });
+      }
+
+      const user_profile = await UserModel.findByIdAndUpdate(id, body, {
+        new: true
+      });
+
+      if (!user_profile) {
+        const team_member = await TeamMember.findByIdAndUpdate(id, body, {
+          new: true
+        });
+
+        if (!team_member) {
+
+          return res
+            .status(HTTP_BAD_REQUEST)
+            .json({ success: SUCCESS, message: "User does not exist." });
+        }
+      }
+
+      return res
+        .status(HTTP_OK)
+        .json({ success: SUCCESS, message: "User successfully updated." });
+    }
+    catch (error) {
+
+      return res
+        .status(HTTP_BAD_REQUEST)
+        .json({ success: FAILED, error });
+    }
+  };
+
+  const DeleteUserDetails = async (req, res) => {
+    const { user_id, created_by_id } = req.query;
+
+    try {
+      if (!user_id || !created_by_id) {
+        return res.status(HTTP_BAD_REQUEST).json({ success: FAILED, message: 'Invalid Request' })
+      }
+
+      const teamMembers = await TeamMember.findById(user_id);
+
+      if (!teamMembers) {
+        return res.status(HTTP_BAD_REQUEST).json({ success: FAILED, message: 'User does not exist' });
+      }
+
+      const team_member_created_by_id = teamMembers.created_by.toString();
+
+      if (team_member_created_by_id != created_by_id) {
+        return res.status(HTTP_BAD_REQUEST).json({ success: FAILED, message: "Permission denied" });
+      }
+
+      await TeamMember.findByIdAndDelete(user_id);
+
+      return res.status(HTTP_OK).json({ success: SUCCESS, message: 'User successfully deleted' });
+    } catch (error) {
+
+      return res.status(HTTP_BAD_REQUEST).json({ success: FAILED, error });
+    }
+  }
+
+  return { UserLogin, UserProfile, CreateTeamMembers, GetTeamMembers, EditUserDetails, DeleteUserDetails };
 };
 
 module.exports = createUserController;
