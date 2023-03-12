@@ -151,12 +151,19 @@ const createUserController = () => {
   const EditUserDetails = async (req, res) => {
     const { id } = req.params;
     const { body } = req;
+    const saltRounds = 10;
 
     try {
       if (!id) {
         return res
           .status(HTTP_BAD_REQUEST)
           .json({ success: FAILED, message: "Id is required" });
+      }
+
+      if (body.password) {
+        const salt = await bcrypt.genSalt(saltRounds);
+        const hashedPassword = await bcrypt.hash(body.password, salt);
+        body.password = hashedPassword;
       }
 
       let user_profile = await UserModel.findByIdAndUpdate(id, body, {
