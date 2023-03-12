@@ -69,11 +69,7 @@ const createUserController = () => {
       res.status(HTTP_OK).json({
         success: SUCCESS,
         message: "User details found",
-        user_details: {
-          username: user_profile.username,
-          email: user_profile.email,
-          role_id: user_profile.role_id,
-        },
+        user_profile,
       });
     } catch (error) {
       console.log(error)
