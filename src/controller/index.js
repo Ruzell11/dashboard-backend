@@ -8,17 +8,18 @@ const createUserController = () => {
   const UserLogin = async (req, res) => {
     const { email, password } = req.body;
 
+
     try {
-      const user = await UserModel.findOne({ email });
+      let user = await UserModel.findOne({ email });
 
       if (!user) {
-        const team_member = await TeamMember.findOne({ email });
-        if (!team_member) {
+        user = await TeamMember.findOne({ email });
+        if (!user) {
           return res
             .status(HTTP_BAD_REQUEST)
             .json({ success: FAILED, message: "Incorrect email or password!" });
         }
-      }
+      };
 
       const isMatch = await bcrypt.compare(password, user.password);
 
@@ -43,9 +44,10 @@ const createUserController = () => {
         },
       });
     } catch (error) {
+      console.log(error)
       return res
         .status(HTTP_BAD_REQUEST)
-        .json({ success: FAILED, error });
+
     }
   }
 
