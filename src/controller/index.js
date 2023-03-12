@@ -55,12 +55,12 @@ const createUserController = () => {
     const { id } = req.params;
 
     try {
-      const user_profile = await UserModel.findById(id);
+      let user_profile = await UserModel.findById(id);
 
       if (!user_profile) {
-        const team_member = await TeamMember.findById(id)
+        user_profile = await TeamMember.findById(id)
 
-        if (!team_member) {
+        if (!user_profile) {
           return res
             .status(HTTP_BAD_REQUEST)
             .json({ success: FAILED, message: "User does not exist" });
@@ -76,6 +76,7 @@ const createUserController = () => {
         },
       });
     } catch (error) {
+      console.log(error)
       return res
         .status(HTTP_BAD_REQUEST)
         .json({ success: FAILED, error });
@@ -158,16 +159,16 @@ const createUserController = () => {
           .json({ success: FAILED, message: "Id is required" });
       }
 
-      const user_profile = await UserModel.findByIdAndUpdate(id, body, {
+      let user_profile = await UserModel.findByIdAndUpdate(id, body, {
         new: true
       });
 
       if (!user_profile) {
-        const team_member = await TeamMember.findByIdAndUpdate(id, body, {
+        const user_profile = await TeamMember.findByIdAndUpdate(id, body, {
           new: true
         });
 
-        if (!team_member) {
+        if (!user_profile) {
 
           return res
             .status(HTTP_BAD_REQUEST)
