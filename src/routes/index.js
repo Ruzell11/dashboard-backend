@@ -16,7 +16,7 @@ module.exports = () => {
   //private routes
   router.get("/profile/:id", validateToken, UserProfile);
   router.post("/add-team", validateToken, CreateTeamMembers);
-  router.get('/get-team-list/:id', GetTeamMembers);
+  router.get('/get-team-list/:id', validateToken, GetTeamMembers);
   router.patch('/edit-profile/:id', validateToken, EditUserDetails);
   router.delete('/delete-user', validateToken, DeleteUserDetails);
 
