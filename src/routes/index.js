@@ -15,10 +15,10 @@ module.exports = () => {
 
   //private routes
   router.get("/profile/:id", validateToken, UserProfile);
-  router.post("/add-team", CreateTeamMembers);
+  router.post("/add-team", validateToken, CreateTeamMembers);
   router.get('/get-team-list/:id', validateToken, GetTeamMembers);
   router.patch('/edit-profile/:id', validateToken, EditUserDetails);
-  router.delete('/delete-user', DeleteUserDetails);
+  router.delete('/delete-user', validateToken, DeleteUserDetails);
 
   // Return the router with the middleware attached
   return router;
