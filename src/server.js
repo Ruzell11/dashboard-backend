@@ -6,7 +6,7 @@ const cookieParser = require("cookie-parser");
 const connectDb = require("./db/index");
 const cors = require("cors");
 const app = express();
-
+const errorHandler = require("./middleware/errorHandler");
 
 app.use(
   cors({
@@ -17,7 +17,6 @@ app.use(
 connectDb();
 const PORT = process.env.PORT;
 
-
 // Set up Multer middleware for handling file uploads
 // Use the Multer middleware in your app
 app.use(express.json());
@@ -25,6 +24,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 app.use("/api/user", generalRoutes());
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log("Server is Running");
