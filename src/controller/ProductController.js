@@ -1,12 +1,17 @@
-const { HTTP_OK, SUCCESS, HTTP_BAD_REQUEST, FAILED } = require("../global");
+const {
+  HTTP_OK,
+  SUCCESS,
+  HTTP_BAD_REQUEST,
+  FAILED,
+  HTTP_INTERNAL_SERVER_ERROR,
+} = require("../global");
 const Product = require("../model/ProductModel");
 const cloudinary = require("../db/cloudinary");
-const { UploadStream } = require("cloudinary");
 const TeamMember = require("../model/CreateTeamModel");
 const ProductModel = require("../model/ProductModel");
 
 const createProductController = () => {
-  const UploadProductDetails = async (req, res) => {
+  const UploadProductDetails = async (req, res, next) => {
     try {
       const { id } = req.params;
       const { product_name, product_price, product_description } = req.body;
@@ -44,12 +49,13 @@ const createProductController = () => {
         message: "Product Successfully Uploaded",
       });
       // ...
-    } catch (error) {
-      console.log(error);
-      res.status(500).send("Error uploading image to Cloudinary");
+    } catch (err) {
+      const error = new Error(err);
+      next(error);
     }
   };
-  const GetProductList = async (req, res) => {
+
+  const GetProductList = async (req, res, next) => {
     const { user_id, role_id } = req.query;
 
     if (!user_id || !role_id) {
@@ -77,7 +83,6 @@ const createProductController = () => {
     try {
       const productList = await ProductModel.find(productListQuery)
         .populate(populateOptions)
-        .lean()
         .exec();
 
       if (productList.length === 0) {
@@ -89,7 +94,8 @@ const createProductController = () => {
       // Update created_by field to created_by_username as a string
       const productListResponse = productList.map((product) => ({
         ...product,
-        created_by: product.created_by.username,
+        created_by: product.created_by._id,
+        created_by_username: product.created_by.username,
       }));
 
       return res.status(HTTP_OK).json({
@@ -97,15 +103,46 @@ const createProductController = () => {
         message: "List of products",
         productList: productListResponse,
       });
-    } catch (error) {
-      console.error(error);
-      return res
-        .status(HTTP_BAD_REQUEST)
-        .json({ success: FAILED, message: "Internal Server Error" });
+    } catch (err) {
+      const error = new Error(err);
+      next(error);
     }
   };
 
-  return { UploadProductDetails, GetProductList };
+  const GetSingleProductDetails = async (req, res, next) => {
+    const { id } = req.params;
+    try {
+      if (!id) {
+        return res
+          .status(HTTP_BAD_REQUEST)
+          .json({ success: FAILED, message: "Id is required" });
+      }
+
+      const productDetails = await Product.findById(id);
+
+      if (productDetails.length === null) {
+        return res
+          .status(HTTP_OK)
+          .json({ success: SUCCESS, message: "Product not found" });
+      }
+
+      const createdByUsername = await TeamMember.findById(
+        productDetails.created_by
+      );
+
+      res.status(HTTP_OK).json({
+        success: SUCCESS,
+        message: "Product details found",
+        created_by_username: createdByUsername.username,
+        productDetails,
+      });
+    } catch (err) {
+      const error = new Error(err);
+      next(error);
+    }
+  };
+
+  return { UploadProductDetails, GetProductList, GetSingleProductDetails };
 };
 
 module.exports = createProductController;
