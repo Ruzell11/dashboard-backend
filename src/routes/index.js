@@ -34,7 +34,7 @@ module.exports = () => {
   router.post(
     "/add-product/:id",
     upload.single("image"),
-    validateToken,
+
     UploadProductDetails
   );
   router.get("/get-product-list/", validateToken, GetProductList);

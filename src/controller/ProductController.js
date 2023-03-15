@@ -30,11 +30,14 @@ const createProductController = () => {
         });
       }
 
-      const result = await cloudinary.uploader.upload(imageBuffer, {
-        folder: "my_folder",
-        tags: ["my_tag"],
-        public_id: product_name,
-      });
+      const result = await cloudinary.uploader.upload(
+        `data:image/png;base64,${imageBuffer.toString("base64")}`, // convert to base64-encoded string
+        {
+          folder: "my_folder",
+          tags: ["my_tag"],
+          public_id: product_name,
+        }
+      );
 
       const newProduct = new Product({
         created_by: id,
@@ -50,7 +53,6 @@ const createProductController = () => {
         success: SUCCESS,
         message: "Product Successfully Uploaded",
       });
-      // ...
     } catch (err) {
       const error = new Error(err);
       next(error);
