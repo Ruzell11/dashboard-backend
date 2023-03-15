@@ -15,24 +15,26 @@ const createProductController = () => {
     try {
       const { id } = req.params;
       const { product_name, product_price, product_description } = req.body;
-      const imageString = req.file.buffer.toString("base64");
+      const imageBuffer = req.file.buffer;
 
       if (
         !id ||
         !product_name ||
         !product_price ||
         !product_description ||
-        !imageString
+        !imageBuffer
       ) {
-        return res
-          .status(HTTP_BAD_REQUEST)
-          .json({ success: FAILED, message: "Missing Fields are required" });
+        return res.status(HTTP_BAD_REQUEST).json({
+          success: FAILED,
+          message: "Missing Fields are required",
+        });
       }
 
-      const result = await cloudinary.uploader.upload(
-        "data:image/png;base64," + imageString,
-        { folder: "my_folder", tags: ["my_tag"], public_id: product_name }
-      );
+      const result = await cloudinary.uploader.upload(imageBuffer, {
+        folder: "my_folder",
+        tags: ["my_tag"],
+        public_id: product_name,
+      });
 
       const newProduct = new Product({
         created_by: id,
