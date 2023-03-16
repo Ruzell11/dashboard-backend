@@ -98,7 +98,8 @@ const createProductController = () => {
       // Update created_by field to created_by_username as a string
       const productListResponse = productList.map((product) => ({
         ...product,
-        created_by: product.created_by._id,
+
+        created_by: product._id.toString(),
         created_by_username: product.created_by.username,
       }));
 
