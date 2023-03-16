@@ -100,7 +100,7 @@ const createProductController = () => {
         ...product,
 
         created_by: product._id.toString(),
-        created_by_username: product.created_by.username,
+        created_by_username: product.username,
       }));
 
       return res.status(HTTP_OK).json({
