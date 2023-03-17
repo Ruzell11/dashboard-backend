@@ -5,6 +5,7 @@ const {
   FAILED,
   HTTP_INTERNAL_SERVER_ERROR,
 } = require("../global");
+const mongoose = require("mongoose");
 const Product = require("../model/ProductModel");
 const cloudinary = require("../db/cloudinary");
 const TeamMember = require("../model/CreateTeamModel");
@@ -15,23 +16,28 @@ const createProductController = () => {
     try {
       const { id } = req.params;
       const { product_name, product_price, product_description } = req.body;
-      const imageString = req.file.buffer.toString("base64");
+      const imageBuffer = req.file.buffer;
 
       if (
         !id ||
         !product_name ||
         !product_price ||
         !product_description ||
-        !imageString
+        !imageBuffer
       ) {
-        return res
-          .status(HTTP_BAD_REQUEST)
-          .json({ success: FAILED, message: "Missing Fields are required" });
+        return res.status(HTTP_BAD_REQUEST).json({
+          success: FAILED,
+          message: "Missing Fields are required",
+        });
       }
 
       const result = await cloudinary.uploader.upload(
-        "data:image/png;base64," + imageString,
-        { folder: "my_folder", tags: ["my_tag"], public_id: product_name }
+        `data:image/png;base64,${imageBuffer.toString("base64")}`, // convert to base64-encoded string
+        {
+          folder: "my_folder",
+          tags: ["my_tag"],
+          public_id: product_name,
+        }
       );
 
       const newProduct = new Product({
@@ -48,7 +54,6 @@ const createProductController = () => {
         success: SUCCESS,
         message: "Product Successfully Uploaded",
       });
-      // ...
     } catch (err) {
       const error = new Error(err);
       next(error);
@@ -71,6 +76,11 @@ const createProductController = () => {
       productListQuery = {}; // get all products
       populateOptions = { path: "created_by", select: "username" }; // include username of created_by in response
     } else {
+      if (!mongoose.Types.ObjectId.isValid(user_id)) {
+        return res
+          .status(HTTP_BAD_REQUEST)
+          .json({ success: FAILED, message: "Invalid user ID" });
+      }
       const user = await TeamMember.findById(user_id);
       if (!user) {
         return res
@@ -93,9 +103,11 @@ const createProductController = () => {
 
       // Update created_by field to created_by_username as a string
       const productListResponse = productList.map((product) => ({
-        ...product,
-        created_by: product.created_by._id,
+        _id: product._id.toString(),
+        product_name: product.product_name,
+        product_description: product.product_description,
         created_by_username: product.created_by.username,
+        image_link: product.image_link,
       }));
 
       return res.status(HTTP_OK).json({

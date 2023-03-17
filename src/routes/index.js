@@ -31,7 +31,12 @@ module.exports = () => {
   router.get("/get-team-list/:id", validateToken, getTeamMembers);
   router.patch("/edit-profile/:id", validateToken, editUserDetails);
   router.delete("/delete-user", validateToken, deleteUserDetails);
-  router.post("/add-product/:id", upload.single("image"), UploadProductDetails);
+  router.post(
+    "/add-product/:id",
+    upload.single("image"),
+
+    UploadProductDetails
+  );
   router.get("/get-product-list/", GetProductList);
   router.get("/get-single-product/:id", GetSingleProductDetails);
 
