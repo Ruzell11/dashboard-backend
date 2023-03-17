@@ -38,7 +38,7 @@ module.exports = () => {
     UploadProductDetails
   );
   router.get("/get-product-list/", GetProductList);
-  router.get("/get-single-product/:id", validateToken, GetSingleProductDetails);
+  router.get("/get-single-product/:id", GetSingleProductDetails);
 
   // Return the router with the middleware attached
   return router;

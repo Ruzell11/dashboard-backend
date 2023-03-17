@@ -5,6 +5,7 @@ const {
   FAILED,
   HTTP_INTERNAL_SERVER_ERROR,
 } = require("../global");
+const mongoose = require("mongoose");
 const Product = require("../model/ProductModel");
 const cloudinary = require("../db/cloudinary");
 const TeamMember = require("../model/CreateTeamModel");
@@ -75,6 +76,11 @@ const createProductController = () => {
       productListQuery = {}; // get all products
       populateOptions = { path: "created_by", select: "username" }; // include username of created_by in response
     } else {
+      if (!mongoose.Types.ObjectId.isValid(user_id)) {
+        return res
+          .status(HTTP_BAD_REQUEST)
+          .json({ success: FAILED, message: "Invalid user ID" });
+      }
       const user = await TeamMember.findById(user_id);
       if (!user) {
         return res
@@ -97,10 +103,11 @@ const createProductController = () => {
 
       // Update created_by field to created_by_username as a string
       const productListResponse = productList.map((product) => ({
-        ...product,
-
-        created_by: product._id.toString(),
-        created_by_username: product.username,
+        _id: product._id.toString(),
+        product_name: product.product_name,
+        product_description: product.product_description,
+        created_by_username: product.created_by.username,
+        image_link: product.image_link,
       }));
 
       return res.status(HTTP_OK).json({
