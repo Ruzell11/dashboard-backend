@@ -156,7 +156,7 @@ const userController = () => {
     });
   };
 
-  const editUserDetails = async (req, res, next) => {
+  const editUserDetails = async (req, res) => {
     const { id } = req.params;
     const { body } = req;
     const saltRounds = 10;
@@ -167,32 +167,28 @@ const userController = () => {
         .json({ success: FAILED, message: "Id is required" });
     }
 
-    if (body.password !== undefined && body.password !== "") {
-      const salt = await bcrypt.genSalt(saltRounds);
-      const hashedPassword = await bcrypt.hash(body.password, salt);
-      body.password = hashedPassword;
-    } else {
-      delete body.password; // Remove the password field from the body object
+    if (body.password == undefined || body.password == "") {
+      delete body.password;  // Remove the password field from the body object
     }
 
     if (body.role_id == undefined || body.role_id === "") {
       delete body.role_id; // Remove the role_id field from the body object
     }
 
-    let user_profile = await UserModel.findByIdAndUpdate(id, body, {
+    const salt = await bcrypt.genSalt(saltRounds);
+    const hashedPassword = await bcrypt.hash(body.password, salt);
+    body.password = hashedPassword;
+
+    const user_profile = await UserModel.findByIdAndUpdate(id, body, {
+      new: true,
+    }) || await TeamMember.findByIdAndUpdate(id, body, {
       new: true,
     });
 
     if (!user_profile) {
-      const user_profile = await TeamMember.findByIdAndUpdate(id, body, {
-        new: true,
-      });
-
-      if (!user_profile) {
-        return res
-          .status(HTTP_BAD_REQUEST)
-          .json({ success: SUCCESS, message: "User does not exist." });
-      }
+      return res
+        .status(HTTP_BAD_REQUEST)
+        .json({ success: SUCCESS, message: "User does not exist." });
     }
 
     return res
@@ -201,7 +197,7 @@ const userController = () => {
   };
 
 
-  const deleteUserDetails = async (req, res, next) => {
+  const deleteUserDetails = async (req, res) => {
     const { user_id, created_by_id } = req.query;
 
     if (!user_id || !created_by_id) {
