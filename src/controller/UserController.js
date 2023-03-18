@@ -100,22 +100,22 @@ const userController = () => {
     const newMember =
       role_id === 1
         ? new UserModel({
-            email,
-            username,
-            password: hashedPassword,
-            role_id,
-            last_name,
-            first_name,
-          })
+          email,
+          username,
+          password: hashedPassword,
+          role_id,
+          last_name,
+          first_name,
+        })
         : new TeamMember({
-            created_by: created_by_id,
-            username,
-            first_name,
-            last_name,
-            email,
-            password: hashedPassword,
-            role_id,
-          });
+          created_by: created_by_id,
+          username,
+          first_name,
+          last_name,
+          email,
+          password: hashedPassword,
+          role_id,
+        });
 
     await newMember.save();
 
@@ -167,10 +167,16 @@ const userController = () => {
         .json({ success: FAILED, message: "Id is required" });
     }
 
-    if (body.password) {
+    if (body.password !== undefined && body.password !== "") {
       const salt = await bcrypt.genSalt(saltRounds);
       const hashedPassword = await bcrypt.hash(body.password, salt);
       body.password = hashedPassword;
+    } else {
+      delete body.password; // Remove the password field from the body object
+    }
+
+    if (body.role_id == undefined || body.role_id === "") {
+      delete body.role_id; // Remove the role_id field from the body object
     }
 
     let user_profile = await UserModel.findByIdAndUpdate(id, body, {
@@ -193,6 +199,7 @@ const userController = () => {
       .status(HTTP_OK)
       .json({ success: SUCCESS, message: "User successfully updated." });
   };
+
 
   const deleteUserDetails = async (req, res, next) => {
     const { user_id, created_by_id } = req.query;
