@@ -6,7 +6,7 @@ const { HTTP_BAD_REQUEST, FAILED, HTTP_OK, SUCCESS } = require("../global");
 const mongoose = require("mongoose");
 
 const userController = () => {
-  const loginUser = async (req, res, next) => {
+  const loginUser = async (req, res) => {
     const { email, password } = req.body;
     let user_profile =
       (await UserModel.findOne({ email })) ||
