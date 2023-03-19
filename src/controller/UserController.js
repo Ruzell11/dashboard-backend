@@ -1,12 +1,13 @@
 const UserModel = require("../model/UserModel");
 const TeamMember = require("../model/CreateTeamModel");
+const ProductModel = require("../model/ProductModel");
 const bcrypt = require("bcrypt");
 const { createTokens } = require("../middleware/index");
 const { HTTP_BAD_REQUEST, FAILED, HTTP_OK, SUCCESS } = require("../global");
 const mongoose = require("mongoose");
 
 const userController = () => {
-  const loginUser = async (req, res) => {
+  const loginUser = async (req, res,) => {
     const { email, password } = req.body;
     let user_profile =
       (await UserModel.findOne({ email })) ||
@@ -68,33 +69,17 @@ const userController = () => {
     const saltRounds = 10;
 
     if (
-      role_id !== 1 &&
-      (!mongoose.Types.ObjectId.isValid(created_by_id) ||
-        !username ||
-        !first_name ||
-        !last_name ||
-        !email ||
-        !password ||
-        !role_id)
-    ) {
+      !username ||
+      !first_name ||
+      !last_name ||
+      !email ||
+      !password ||
+      !role_id) {
       return res
         .status(HTTP_BAD_REQUEST)
         .json({ success: FAILED, message: "Missing fields are required" });
     }
 
-    if (
-      role_id === 1 &&
-      (!username ||
-        !first_name ||
-        !last_name ||
-        !email ||
-        !password ||
-        !role_id)
-    ) {
-      return res
-        .status(HTTP_BAD_REQUEST)
-        .json({ success: FAILED, message: "Missing fields are required" });
-    }
 
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     const newMember =
@@ -126,19 +111,17 @@ const userController = () => {
     });
   };
 
-  const getTeamMembers = async (req, res, next) => {
+  const getTeamMembers = async (req, res) => {
     const created_by_id = req.params.id;
 
-    let user_profile = await UserModel.findById(created_by_id);
+    let user_profile = await UserModel.findById(created_by_id) || await TeamMember.findById(created_by_id);
 
     if (!user_profile) {
-      user_profile = await TeamMember.findById(created_by_id);
-      if (!user_profile) {
-        return res
-          .status(HTTP_BAD_REQUEST)
-          .json({ success: FAILED, message: "User does not exist" });
-      }
+      return res
+        .status(HTTP_BAD_REQUEST)
+        .json({ success: FAILED, message: "User does not exist" });
     }
+
 
     const listOfMembers = await TeamMember.find({ created_by: created_by_id });
 
@@ -222,11 +205,15 @@ const userController = () => {
         .json({ success: FAILED, message: "Permission denied" });
     }
 
+    // Delete the user
     await TeamMember.findByIdAndDelete(user_id);
+
+    // Delete the products related to the user
+    await ProductModel.deleteMany({ created_by: user_id });
 
     return res
       .status(HTTP_OK)
-      .json({ success: SUCCESS, message: "User successfully deleted" });
+      .json({ success: SUCCESS, message: "User and related products successfully deleted" });
   };
 
   return {
