@@ -103,7 +103,7 @@ const createProductController = () => {
       _id: product._id.toString(),
       product_name: product.product_name,
       product_description: product.product_description,
-      created_by_username: product.created_by.username,
+      created_by_username: product.created_by?.username || null,
       image_link: product.image_link,
     }));
 
