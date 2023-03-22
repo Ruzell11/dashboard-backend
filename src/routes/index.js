@@ -34,11 +34,16 @@ module.exports = () => {
   router.post(
     "/products/create/:id",
     upload.single("image"),
-
+    validateToken,
     UploadProductDetails
   );
+<<<<<<< HEAD
   router.get("/products/product-list/", GetProductList);
   router.get("/products/product-details/:id", GetSingleProductDetails);
+=======
+  router.get("/get-product-list/", validateToken, GetProductList);
+  router.get("/get-single-product/:id", validateToken, GetSingleProductDetails);
+>>>>>>> 007e4937b2f8f0baa95783a788928f4034625b03
 
   // Return the router with the middleware attached
   return router;

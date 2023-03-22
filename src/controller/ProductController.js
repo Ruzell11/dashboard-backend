@@ -13,51 +13,46 @@ const ProductModel = require("../model/ProductModel");
 
 const createProductController = () => {
   const UploadProductDetails = async (req, res, next) => {
-    try {
-      const { id } = req.params;
-      const { product_name, product_price, product_description } = req.body;
-      const imageBuffer = req.file.buffer;
+    const { id } = req.params;
+    const { product_name, product_price, product_description } = req.body;
+    const imageBuffer = req.file.buffer;
 
-      if (
-        !id ||
-        !product_name ||
-        !product_price ||
-        !product_description ||
-        !imageBuffer
-      ) {
-        return res.status(HTTP_BAD_REQUEST).json({
-          success: FAILED,
-          message: "Missing Fields are required",
-        });
-      }
-
-      const result = await cloudinary.uploader.upload(
-        `data:image/png;base64,${imageBuffer.toString("base64")}`, // convert to base64-encoded string
-        {
-          folder: "my_folder",
-          tags: ["my_tag"],
-          public_id: product_name,
-        }
-      );
-
-      const newProduct = new Product({
-        created_by: id,
-        product_price,
-        product_description,
-        product_name,
-        image_link: result.secure_url,
+    if (
+      !id ||
+      !product_name ||
+      !product_price ||
+      !product_description ||
+      !imageBuffer
+    ) {
+      return res.status(HTTP_BAD_REQUEST).json({
+        success: FAILED,
+        message: "Missing Fields are required",
       });
-
-      newProduct.save();
-
-      res.status(HTTP_OK).json({
-        success: SUCCESS,
-        message: "Product Successfully Uploaded",
-      });
-    } catch (err) {
-      const error = new Error(err);
-      next(error);
     }
+
+    const result = await cloudinary.uploader.upload(
+      `data:image/png;base64,${imageBuffer.toString("base64")}`, // convert to base64-encoded string
+      {
+        folder: "my_folder",
+        tags: ["my_tag"],
+        public_id: product_name,
+      }
+    );
+
+    const newProduct = new Product({
+      created_by: id,
+      product_price,
+      product_description,
+      product_name,
+      image_link: result.secure_url,
+    });
+
+    newProduct.save();
+
+    res.status(HTTP_OK).json({
+      success: SUCCESS,
+      message: "Product Successfully Uploaded",
+    });
   };
 
   const GetProductList = async (req, res, next) => {
@@ -90,69 +85,56 @@ const createProductController = () => {
       productListQuery = { created_by: user_id }; // get products created by user
     }
 
-    try {
-      const productList = await ProductModel.find(productListQuery)
-        .populate(populateOptions)
-        .exec();
+    const productList = await ProductModel.find(productListQuery)
+      .populate(populateOptions)
+      .exec();
 
-      if (productList.length === 0) {
-        return res
-          .status(HTTP_OK)
-          .json({ success: SUCCESS, message: "No products found" });
-      }
+    // Update created_by field to created_by_username as a string
+    const productListResponse = productList.map((product) => ({
+      _id: product._id.toString(),
+      product_name: product.product_name,
+      product_description: product.product_description,
+      product_price: product.product_price,
+      created_by_username: product.created_by.username,
+      image_link: product.image_link,
+    }));
 
-      // Update created_by field to created_by_username as a string
-      const productListResponse = productList.map((product) => ({
-        _id: product._id.toString(),
-        product_name: product.product_name,
-        product_description: product.product_description,
-        product_price: product.product_price,
-        created_by_username: product.created_by.username,
-        image_link: product.image_link,
-      }));
+    return res.status(HTTP_OK).json({
+      success: SUCCESS,
+      message: "List of products",
+      productList: productListResponse,
+    });
 
-      return res.status(HTTP_OK).json({
-        success: SUCCESS,
-        message: "List of products",
-        productList: productListResponse,
-      });
-    } catch (err) {
-      const error = new Error(err);
-      next(error);
-    }
+    // Update created_by field to created_by_username as a string
   };
 
   const GetSingleProductDetails = async (req, res, next) => {
     const { id } = req.params;
-    try {
-      if (!id) {
-        return res
-          .status(HTTP_BAD_REQUEST)
-          .json({ success: FAILED, message: "Id is required" });
-      }
 
-      const productDetails = await Product.findById(id);
-
-      if (productDetails.length === null) {
-        return res
-          .status(HTTP_OK)
-          .json({ success: SUCCESS, message: "Product not found" });
-      }
-
-      const createdByUsername = await TeamMember.findById(
-        productDetails.created_by
-      );
-
-      res.status(HTTP_OK).json({
-        success: SUCCESS,
-        message: "Product details found",
-        created_by_username: createdByUsername.username,
-        productDetails,
-      });
-    } catch (err) {
-      const error = new Error(err);
-      next(error);
+    if (!id) {
+      return res
+        .status(HTTP_BAD_REQUEST)
+        .json({ success: FAILED, message: "Id is required" });
     }
+
+    const productDetails = await Product.findById(id);
+
+    if (productDetails.length === null) {
+      return res
+        .status(HTTP_OK)
+        .json({ success: SUCCESS, message: "Product not found" });
+    }
+
+    const createdByUsername = await TeamMember.findById(
+      productDetails.created_by
+    );
+
+    res.status(HTTP_OK).json({
+      success: SUCCESS,
+      message: "Product details found",
+      created_by_username: createdByUsername.username,
+      productDetails,
+    });
   };
 
   return { UploadProductDetails, GetProductList, GetSingleProductDetails };
