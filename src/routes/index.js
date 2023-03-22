@@ -26,19 +26,24 @@ module.exports = () => {
   router.post("/login", loginUser);
 
   //private routes
-  router.get("/profile/:id", validateToken, userProfile);
-  router.post("/add-team", validateToken, createTeamMembers);
-  router.get("/get-team-list/:id", validateToken, getTeamMembers);
-  router.patch("/edit-profile/:id", validateToken, editUserDetails);
-  router.delete("/delete-user", validateToken, deleteUserDetails);
+  router.post("/users/create", validateToken, createTeamMembers);
+  router.get("/users/profile/:id", validateToken, userProfile);
+  router.get("/users/team-list/:id", validateToken, getTeamMembers);
+  router.patch("/users/edit/:id", validateToken, editUserDetails);
+  router.delete("/users/delete", validateToken, deleteUserDetails);
   router.post(
-    "/add-product/:id",
+    "/products/create/:id",
     upload.single("image"),
     validateToken,
     UploadProductDetails
   );
+<<<<<<< HEAD
+  router.get("/products/product-list/", GetProductList);
+  router.get("/products/product-details/:id", GetSingleProductDetails);
+=======
   router.get("/get-product-list/", validateToken, GetProductList);
   router.get("/get-single-product/:id", validateToken, GetSingleProductDetails);
+>>>>>>> 007e4937b2f8f0baa95783a788928f4034625b03
 
   // Return the router with the middleware attached
   return router;

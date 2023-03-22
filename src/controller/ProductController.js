@@ -13,7 +13,6 @@ const ProductModel = require("../model/ProductModel");
 
 const createProductController = () => {
   const UploadProductDetails = async (req, res, next) => {
-
     const { id } = req.params;
     const { product_name, product_price, product_description } = req.body;
     const imageBuffer = req.file.buffer;
@@ -54,7 +53,6 @@ const createProductController = () => {
       success: SUCCESS,
       message: "Product Successfully Uploaded",
     });
-
   };
 
   const GetProductList = async (req, res, next) => {
@@ -87,23 +85,17 @@ const createProductController = () => {
       productListQuery = { created_by: user_id }; // get products created by user
     }
 
-
     const productList = await ProductModel.find(productListQuery)
       .populate(populateOptions)
       .exec();
-
-    if (productList.length === 0) {
-      return res
-        .status(HTTP_OK)
-        .json({ success: SUCCESS, message: "No products found" });
-    }
 
     // Update created_by field to created_by_username as a string
     const productListResponse = productList.map((product) => ({
       _id: product._id.toString(),
       product_name: product.product_name,
       product_description: product.product_description,
-      created_by_username: product.created_by?.username || null,
+      product_price: product.product_price,
+      created_by_username: product.created_by.username,
       image_link: product.image_link,
     }));
 
@@ -113,6 +105,7 @@ const createProductController = () => {
       productList: productListResponse,
     });
 
+    // Update created_by field to created_by_username as a string
   };
 
   const GetSingleProductDetails = async (req, res, next) => {
@@ -142,7 +135,6 @@ const createProductController = () => {
       created_by_username: createdByUsername.username,
       productDetails,
     });
-
   };
 
   return { UploadProductDetails, GetProductList, GetSingleProductDetails };
