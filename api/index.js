@@ -1,12 +1,12 @@
 require("dotenv").config();
 
 const express = require("express");
-const generalRoutes = require("./routes/index");
+const generalRoutes = require("../src/routes/index");
 const cookieParser = require("cookie-parser");
-const connectDb = require("./db/index");
+const connectDb = require("../src/db/index");
 const cors = require("cors");
 const app = express();
-const errorHandler = require("./middleware/errorHandler");
+const errorHandler = require("../src/middleware/errorHandler");
 
 app.use(
   cors({
